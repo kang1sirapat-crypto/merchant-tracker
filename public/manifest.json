@@ -1,0 +1,18 @@
+{
+  "name": "สมุดบันทึกรายรับรายจ่าย พ่อค้าแม่ค้า",
+  "short_name": "บันทึกร้านค้า",
+  "description": "แอปบันทึกรายรับรายจ่ายร้านค้า ปุ่มใหญ่ ใช้ง่าย สรุปยอดทันใจ",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#047857",
+  "theme_color": "#047857",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "192x192 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
