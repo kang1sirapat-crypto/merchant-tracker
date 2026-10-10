@@ -29,7 +29,8 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Wallet,
-  Award
+  Award,
+  RotateCcw
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -146,9 +147,13 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState(null);
   const [shopName, setShopName] = useState('ร้านของฉัน');
 
-  // Load transactions and initialize realistic sample dataset if empty
+  // Load transactions starting fresh at 0
   useEffect(() => {
-    const saved = localStorage.getItem('merchant_transactions_v2');
+    // Clear any previous mock datasets
+    localStorage.removeItem('merchant_transactions_v1');
+    localStorage.removeItem('merchant_transactions_v2');
+
+    const saved = localStorage.getItem('merchant_transactions_v3');
     const savedShop = localStorage.getItem('merchant_shop_name');
     if (savedShop) setShopName(savedShop);
 
@@ -159,63 +164,24 @@ export default function App() {
         setTransactions([]);
       }
     } else {
-      // Build realistic starter data across current week for impressive initial charts
-      const now = new Date();
-      const initial = [];
-      const sampleDays = [
-        { dayOffset: 0, incomes: [{ amt: 850, cat: 'cash', n: 'หน้าร้านช่วงเช้า' }, { amt: 1200, cat: 'qr', n: 'ลูกค้าสแกนพร้อมเพย์' }], expenses: [{ amt: 650, cat: 'food_supply', n: 'ซื้อหมูสด+ผัก' }, { amt: 120, cat: 'packaging', n: 'ถุงหิ้ว+กล่อง' }] },
-        { dayOffset: 1, incomes: [{ amt: 2100, cat: 'cash', n: 'ขายดีโต๊ะเต็ม' }, { amt: 850, cat: 'delivery', n: 'ออเดอร์ Grab 4 คิว' }], expenses: [{ amt: 900, cat: 'food_supply', n: 'ของสดตลาดเช้า' }, { amt: 250, cat: 'gas_oil', n: 'เติมแก๊ส 1 ถัง' }] },
-        { dayOffset: 2, incomes: [{ amt: 1400, cat: 'cash', n: 'ขายหน้าร้าน' }, { amt: 950, cat: 'qr', n: 'สแกน QR' }], expenses: [{ amt: 750, cat: 'food_supply', n: 'ของสด' }] },
-        { dayOffset: 3, incomes: [{ amt: 1950, cat: 'cash', n: 'ขายหน้าร้าน' }, { amt: 600, cat: 'wholesale', n: 'ออเดอร์ส่งจัดเลี้ยง' }], expenses: [{ amt: 820, cat: 'food_supply', n: 'วัตถุดิบ' }, { amt: 150, cat: 'other', n: 'น้ำยาล้างจาน+ฟองน้ำ' }] },
-        { dayOffset: 4, incomes: [{ amt: 2500, cat: 'cash', n: 'เสาร์-อาทิตย์ ลูกค้าแน่น' }, { amt: 1400, cat: 'qr', n: 'สแกนจ่าย' }], expenses: [{ amt: 1100, cat: 'food_supply', n: 'ของสดรอบใหญ่' }, { amt: 300, cat: 'rent', n: 'ค่าเช่าแผงรายวัน' }] },
-        { dayOffset: 5, incomes: [{ amt: 1800, cat: 'cash', n: 'ขายหน้าร้าน' }, { amt: 900, cat: 'delivery', n: 'ไรเดอร์ Lineman' }], expenses: [{ amt: 850, cat: 'food_supply', n: 'เนื้อสัตว์+ผัก' }] },
-      ];
-
-      sampleDays.forEach((group, idx) => {
-        const d = new Date(now);
-        d.setDate(d.getDate() - group.dayOffset);
-        const dStr = toDateString(d);
-
-        group.incomes.forEach((item, iIdx) => {
-          const cat = INCOME_CATEGORIES.find((c) => c.id === item.cat) || INCOME_CATEGORIES[0];
-          initial.push({
-            id: `sample_in_${idx}_${iIdx}`,
-            type: 'income',
-            amount: item.amt,
-            category: cat.id,
-            categoryName: cat.name,
-            note: item.n,
-            date: dStr,
-            time: '11:30',
-            timestamp: d.getTime() + iIdx * 1000
-          });
-        });
-
-        group.expenses.forEach((item, eIdx) => {
-          const cat = EXPENSE_CATEGORIES.find((c) => c.id === item.cat) || EXPENSE_CATEGORIES[0];
-          initial.push({
-            id: `sample_ex_${idx}_${eIdx}`,
-            type: 'expense',
-            amount: item.amt,
-            category: cat.id,
-            categoryName: cat.name,
-            note: item.n,
-            date: dStr,
-            time: '07:15',
-            timestamp: d.getTime() + (eIdx + 10) * 1000
-          });
-        });
-      });
-
-      setTransactions(initial);
-      localStorage.setItem('merchant_transactions_v2', JSON.stringify(initial));
+      // Start completely clean at 0
+      setTransactions([]);
+      localStorage.setItem('merchant_transactions_v3', JSON.stringify([]));
     }
   }, []);
 
   const saveTransactions = (newTx) => {
     setTransactions(newTx);
-    localStorage.setItem('merchant_transactions_v2', JSON.stringify(newTx));
+    localStorage.setItem('merchant_transactions_v3', JSON.stringify(newTx));
   };
+
+  const handleResetAll = () => {
+    if (window.confirm('คุณต้องการรีเซ็ตข้อมูลทั้งหมดกลับเป็น 0 ใช่หรือไม่? (รายการที่เคยบันทึกไว้จะถูกลบทั้งหมด)')) {
+      saveTransactions([]);
+      showToast('🔄 รีเซ็ตยอดทั้งหมดเป็น 0 เรียบร้อยแล้ว');
+    }
+  };
+
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -597,6 +563,14 @@ export default function App() {
 
           <div className="flex items-center gap-1.5">
             <button
+              onClick={handleResetAll}
+              className="p-2 bg-white/15 hover:bg-white/25 active:scale-95 rounded-xl text-white transition-all flex items-center gap-1 text-xs font-medium"
+              title="รีเซ็ตยอดทั้งหมดเป็น 0"
+            >
+              <RotateCcw className="w-4 h-4 text-emerald-200" />
+              <span className="hidden sm:inline">รีเซ็ต 0</span>
+            </button>
+            <button
               onClick={() => setShowShareModal(true)}
               className="p-2 bg-white/15 hover:bg-white/25 active:scale-95 rounded-xl text-white transition-all flex items-center gap-1 text-xs font-medium"
               title="ส่งสรุปเข้า LINE"
@@ -613,6 +587,7 @@ export default function App() {
               <span>ติดจอโฮม</span>
             </button>
           </div>
+
         </div>
 
         {/* PERIOD MODE SELECTOR: DAY / WEEK / MONTH */}
